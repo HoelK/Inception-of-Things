@@ -1,6 +1,0 @@
-enable nested virt in oracle
-install git,nvim,curl,tmux,vagrant
-generate ssh, put in github
-sudo apt update
-sudo apt install libvirt-daemon-system libvirt-clients qemu-kvm virt-manager
-vagrant plugin install vagrant-libvirt

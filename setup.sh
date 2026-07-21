@@ -14,22 +14,6 @@ echo "User: $USERNAME"
 echo "=================================================="
 
 ###############################################################################
-# Grant sudo privileges
-###############################################################################
-
-if ! sudo -l >/dev/null 2>&1; then
-    echo "This script must be run by a user with sudo access."
-    exit 1
-fi
-
-if [ ! -f "/etc/sudoers.d/90-${USERNAME}" ]; then
-    echo "Adding ${USERNAME} to sudoers..."
-    echo "${USERNAME} ALL=(ALL:ALL) ALL" | sudo tee "/etc/sudoers.d/90-${USERNAME}" >/dev/null
-    sudo chmod 440 "/etc/sudoers.d/90-${USERNAME}"
-    sudo visudo -cf "/etc/sudoers.d/90-${USERNAME}"
-fi
-
-###############################################################################
 # Update system
 ###############################################################################
 
@@ -58,17 +42,12 @@ sudo apt install -y \
     ripgrep \
     fd-find \
     build-essential \
-    gcc \
-    g++ \
     make \
     pkg-config \
-    software-properties-common \
-    ca-certificates \
     gnupg \
     python3 \
     python3-pip \
     python3-venv \
-    openssh-client
 
 ###############################################################################
 # Install libvirt / KVM
@@ -77,6 +56,8 @@ sudo apt install -y \
 echo "Installing KVM/libvirt..."
 
 sudo apt install -y \
+    libvirt-dev \
+    ruby-dev \
     qemu-kvm \
     libvirt-daemon-system \
     libvirt-clients \
@@ -95,20 +76,16 @@ sudo usermod -aG kvm "$USERNAME"
 # Install latest Vagrant
 ###############################################################################
 
-echo "Installing Vagrant..."
-
 VAGRANT_VERSION="2.4.9"
 
-if ! command -v vagrant >/dev/null; then
-    cd /tmp
+cd /tmp
 
-    wget -q \
-      "https://releases.hashicorp.com/vagrant/${VAGRANT_VERSION}/vagrant_${VAGRANT_VERSION}_linux_amd64.deb"
+wget "https://releases.hashicorp.com/vagrant/${VAGRANT_VERSION}/vagrant_${VAGRANT_VERSION}-1_amd64.deb"
 
-    sudo apt install -y "./vagrant_${VAGRANT_VERSION}_linux_amd64.deb"
+sudo apt install -y "./vagrant_${VAGRANT_VERSION}-1_amd64.deb"
 
-    rm "vagrant_${VAGRANT_VERSION}_linux_amd64.deb"
-fi
+rm "vagrant_${VAGRANT_VERSION}-1_amd64.deb"
+
 
 ###############################################################################
 # Install vagrant-libvirt
@@ -116,23 +93,6 @@ fi
 
 if ! vagrant plugin list | grep -q "^vagrant-libvirt "; then
     vagrant plugin install vagrant-libvirt
-fi
-
-###############################################################################
-# SSH key
-###############################################################################
-
-mkdir -p "$HOME_DIR/.ssh"
-chmod 700 "$HOME_DIR/.ssh"
-
-if [ ! -f "$HOME_DIR/.ssh/id_ed25519" ]; then
-    echo "Generating SSH key..."
-
-    ssh-keygen \
-        -t ed25519 \
-        -C "${USERNAME}@$(hostname)" \
-        -f "$HOME_DIR/.ssh/id_ed25519" \
-        -N ""
 fi
 
 ###############################################################################
@@ -145,10 +105,6 @@ echo "Installed version"
 echo "=================================================="
 
 vagrant --version
-
-echo
-echo "Public SSH key:"
-cat "$HOME_DIR/.ssh/id_ed25519.pub"
 
 echo
 echo "=================================================="

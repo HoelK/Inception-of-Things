@@ -92,7 +92,7 @@ rm "vagrant_${VAGRANT_VERSION}-1_amd64.deb"
 ###############################################################################
 
 if ! vagrant plugin list | grep -q "^vagrant-libvirt "; then
-    vagrant plugin install vagrant-libvirt
+    vagrant plugin install vagrant-libvirt vagrant-env dotenv
 fi
 
 ###############################################################################

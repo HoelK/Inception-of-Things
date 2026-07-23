@@ -93,6 +93,10 @@ rm "vagrant_${VAGRANT_VERSION}-1_amd64.deb"
 
 if ! vagrant plugin list | grep -q "^vagrant-libvirt "; then
     vagrant plugin install vagrant-libvirt vagrant-env dotenv
+
+	#patch dotven
+	sudo sed -i 's/File.exists?/File.exist?/' /home/hkeromne/.vagrant.d/gems/3.3.8/gems/dotenv-0.11.1/lib/dotenv.rb
+
 fi
 
 ###############################################################################

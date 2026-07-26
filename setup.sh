@@ -39,6 +39,7 @@ sudo apt install -y \
     htop \
     tree \
     jq \
+	rsync \
     ripgrep \
     fd-find \
     build-essential \

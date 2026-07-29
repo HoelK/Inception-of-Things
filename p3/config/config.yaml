@@ -1,0 +1,19 @@
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: project-cluster
+servers: 1
+agents: 0
+kubeAPI:
+  host: "localhost"
+  hostIP: "127.0.0.1"
+  hostPort: "6445"
+image: rancher/k3s:v1.36.3-rc1-k3s1
+volumes:
+  - volume: "/home/hkeromne/Inception-of-Things/p3/config/default:/var/lib/rancher/k3s/server/manifests/default:ro"
+    nodeFilters:
+      - server:0
+ports:
+  - port: 8080:30010
+    nodeFilters:
+      - server:0

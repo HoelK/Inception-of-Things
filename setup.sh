@@ -49,6 +49,7 @@ sudo apt install -y \
     python3 \
     python3-pip \
     python3-venv \
+	ca-certificates \
 
 ###############################################################################
 # Install libvirt / KVM
@@ -99,6 +100,42 @@ if ! vagrant plugin list | grep -q "^vagrant-libvirt "; then
 	sudo sed -i 's/File.exists?/File.exist?/' /home/hkeromne/.vagrant.d/gems/3.3.8/gems/dotenv-0.11.1/lib/dotenv.rb
 
 fi
+
+
+###############################################################################
+# Install Docker
+###############################################################################
+
+sudo apt remove $(dpkg --get-selections docker.io docker-compose docker-doc podman-docker containerd runc | cut -f1)
+
+###############################################################################
+# Install K3D
+###############################################################################
+
+curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+# Add the repository to Apt sources:
+sudo tee /etc/apt/sources.list.d/docker.sources <<EOF
+Types: deb
+URIs: https://download.docker.com/linux/debian
+Suites: $(. /etc/os-release && echo "$VERSION_CODENAME")
+Components: stable
+Architectures: $(dpkg --print-architecture)
+Signed-By: /etc/apt/keyrings/docker.asc
+EOF
+
+sudo apt update
+sudo apt install	docker-ce \
+					docker-ce-cli \
+					containerd.io \
+					docker-buildx-plugin \
+					docker-compose-plugin
+
+curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+sudo install -m 555 argocd /usr/local/bin/argocd
 
 ###############################################################################
 # Verify

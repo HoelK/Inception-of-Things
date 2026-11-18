@@ -5,6 +5,7 @@ set -euo pipefail
 # Debian Development VM Bootstrap
 ###############################################################################
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 USERNAME="$(id -un)"
 HOME_DIR="$(getent passwd "$USERNAME" | cut -d: -f6)"
 
@@ -96,46 +97,18 @@ rm "vagrant_${VAGRANT_VERSION}-1_amd64.deb"
 if ! vagrant plugin list | grep -q "^vagrant-libvirt "; then
     vagrant plugin install vagrant-libvirt vagrant-env dotenv
 
-	#patch dotven
-	sudo sed -i 's/File.exists?/File.exist?/' /home/hkeromne/.vagrant.d/gems/3.3.8/gems/dotenv-0.11.1/lib/dotenv.rb
+	# patch dotenv (File.exists? was removed in Ruby 3.2)
+	find "$HOME_DIR/.vagrant.d/gems" -path '*/gems/dotenv-*/lib/dotenv.rb' \
+		-exec sed -i 's/File.exists?/File.exist?/' {} +
 
 fi
 
 
 ###############################################################################
-# Install Docker
+# Part 3 tooling: Docker, k3d, kubectl, Argo CD CLI
 ###############################################################################
 
-sudo apt remove $(dpkg --get-selections docker.io docker-compose docker-doc podman-docker containerd runc | cut -f1)
-
-###############################################################################
-# Install K3D
-###############################################################################
-
-curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
-sudo install -m 0755 -d /etc/apt/keyrings
-sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
-sudo chmod a+r /etc/apt/keyrings/docker.asc
-
-# Add the repository to Apt sources:
-sudo tee /etc/apt/sources.list.d/docker.sources <<EOF
-Types: deb
-URIs: https://download.docker.com/linux/debian
-Suites: $(. /etc/os-release && echo "$VERSION_CODENAME")
-Components: stable
-Architectures: $(dpkg --print-architecture)
-Signed-By: /etc/apt/keyrings/docker.asc
-EOF
-
-sudo apt update
-sudo apt install	docker-ce \
-					docker-ce-cli \
-					containerd.io \
-					docker-buildx-plugin \
-					docker-compose-plugin
-
-curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
-sudo install -m 555 argocd /usr/local/bin/argocd
+"$SCRIPT_DIR/p3/scripts/install.sh"
 
 ###############################################################################
 # Verify

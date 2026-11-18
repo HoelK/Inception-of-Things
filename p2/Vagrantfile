@@ -1,29 +1,30 @@
 Vagrant.require_version ">= 2.2.0"
 Vagrant.configure("2") do |config|
-  config.vm.box = "generic/debian12"
-  config.vm.box_version = "4.3.12"
+  config.vm.box = "debian/trixie64"
+  config.vm.box_version = "13.20260519.1"
   config.env.enable
 
-  required = %w[
-  SERVER_NAME SERVER_IP
-  K3S_TOKEN K3S_URL
-  ]
+  # Values imposed by the subject; .env can override them, but they work out of the box.
+  server_name = ENV.fetch("SERVER_NAME", "hkeromneS")
+  server_ip   = ENV.fetch("SERVER_IP",   "192.168.56.110")
+  k3s_token   = ENV["K3S_TOKEN"]
 
-  required.each do |var|
-    raise "#{var} is not set" unless ENV[var]
-  end
+  raise "K3S_TOKEN is not set (cp .env.example .env and fill it in)" if k3s_token.to_s.empty?
 
   config.vm.provider "libvirt" do |kvm|
     kvm.cpus = 1
     kvm.memory = 1024
   end
 
-  config.vm.define ENV["SERVER_NAME"] do |server|
-    server.vm.hostname = ENV["SERVER_NAME"]
-    server.vm.synced_folder "./config/k3s", "/var/lib/rancher/k3s/server/manifests", type: "rsync", rsync_auto: true
-    config.vm.network "forwarded_port", guest: 80, host: 8080
-    server.vm.network "private_network", ip: ENV["SERVER_IP"]
-    server.vm.provision "shell", path: "script/server.sh", env: { "K3S_TOKEN" => ENV["K3S_TOKEN"],
-                                                                  "SERVER_IP"  => ENV["SERVER_IP"] }
+  config.vm.define server_name do |server|
+    server.vm.hostname = server_name
+    # K3s auto-deploys everything in this folder. No --delete: rsync must not wipe
+    # the manifests K3s writes there itself (traefik.yaml, coredns.yaml, ...).
+    server.vm.synced_folder "./confs", "/var/lib/rancher/k3s/server/manifests", type: "rsync",
+      rsync_auto: true, rsync__args: ["--verbose", "--archive", "-z", "--copy-links"]
+    server.vm.network "forwarded_port", guest: 80, host: 8080
+    server.vm.network "private_network", ip: server_ip
+    server.vm.provision "shell", path: "scripts/server.sh", env: { "K3S_TOKEN" => k3s_token,
+                                                                   "SERVER_IP" => server_ip }
   end
 end

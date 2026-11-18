@@ -1,0 +1,20 @@
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: project-cluster
+servers: 1
+agents: 0
+kubeAPI:
+  host: "localhost"
+  hostIP: "127.0.0.1"
+  hostPort: "6445"
+image: rancher/k3s:v1.36.6-k3s1
+ports:
+  # App deployed by Argo CD (NodePort 30010 in the GitHub repo's service)
+  - port: 8888:30010
+    nodeFilters:
+      - server:0
+  # Argo CD UI, through the Traefik ingress in confs/ingress
+  - port: 8081:80
+    nodeFilters:
+      - loadbalancer

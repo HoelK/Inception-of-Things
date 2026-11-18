@@ -1,11 +1,23 @@
 #!/bin/bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
 
-sudo k3d cluster create --config ./config/config.yaml
+sudo k3d cluster create --config confs/config.yaml
 
-until sudo kubectl get namespace argocd >/dev/null 2>&1; do
-  sleep 1
-done
+# Namespaces: argocd and dev
+sudo kubectl apply -f confs/default/
 
-sudo kubectl apply --server-side -k ./config/argocd/. -n argocd
-sudo kubectl apply -f ./config/ingress/.
-sudo kubectl apply -f ./config/argocd/argocd-app.yaml
+# Argo CD (upstream install + --insecure patch)
+sudo kubectl apply --server-side -k confs/argocd/
+sudo kubectl wait --for condition=established crd/applications.argoproj.io --timeout=120s
+sudo kubectl -n argocd rollout status deploy/argocd-server --timeout=300s
+
+sudo kubectl apply -f confs/ingress/
+sudo kubectl apply -f confs/argocd/argocd-app.yaml
+
+echo
+echo "Argo CD UI : http://localhost:8081  (user: admin)"
+echo -n "Password   : "
+sudo kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d || true
+echo
+echo "App        : http://localhost:8888"
